@@ -5,23 +5,31 @@ const randomInt = (min: number, max: number) => Math.floor(Math.random() * (max 
 
 // Helper to create a believable distractor
 const createDistractor = (correct: number): number => {
+    // Tight distractors to force calculation over estimation
     const strategies = [
         () => correct + 1,
         () => correct - 1,
-        () => correct + 10,
-        () => correct - 10,
-        () => correct + randomInt(2, 5),
-        () => correct - randomInt(2, 5),
+        () => correct + 2,
+        () => correct - 2,
+        () => correct + 3,
+        () => correct - 3,
+        // Common parity flip
+        () => correct + (correct % 2 === 0 ? 1 : -1),
     ];
 
-    // Try to pick a distractor that isn't the correct answer and is positive if the correct answer is positive/small
     let distractor = correct;
-    while (distractor === correct) {
+    let attempts = 0;
+    while ((distractor === correct) && attempts < 20) {
         const strategy = strategies[randomInt(0, strategies.length - 1)];
         distractor = strategy();
-        // For simple arithmetic, avoid negative distractors if the answer is positive, unless complexity is high
+        // Prevent negative distractors for positive answers unless it's an advanced level (handled roughly by value)
+        // If correct is > 5, distractor shouldn't be negative generally in this simple logic
         if (correct >= 0 && distractor < 0) distractor = Math.abs(distractor);
+        attempts++;
     }
+    // Fallback if loop fails
+    if (distractor === correct) distractor = correct + 1;
+
     return distractor;
 };
 
@@ -30,9 +38,9 @@ export const COMPEXITY_NAMES: Record<number, string> = {
     2: "Basic Subtraction",
     3: "Intermediate Addition",
     4: "Intermediate Subtraction",
-    5: "Multiplication (1-5)",
+    5: "Multiplication (Basic)",
     6: "Division",
-    7: "Multiplication (6-12)",
+    7: "Multiplication (Advanced)",
     8: "Mixed Operations",
     9: "Simple Algebra",
     10: "Pre-Algebra"
@@ -48,103 +56,155 @@ export const generateQuestion = (complexity: number): Question => {
     const level = Math.max(1, Math.min(10, complexity));
 
     switch (level) {
-        case 1: // Addition (1-10)
+        case 1: // Addition (1-20, or 3 terms)
             {
-                const a = randomInt(1, 10);
+                if (Math.random() < 0.2) {
+                    // 3 terms: 2 + 3 + 1
+                    const a = randomInt(1, 5);
+                    const b = randomInt(1, 5);
+                    const c = randomInt(1, 5);
+                    expression = `${a} + ${b} + ${c}`;
+                    correctAnswer = a + b + c;
+                } else {
+                    const a = randomInt(5, 20);
+                    const b = randomInt(1, 10);
+                    expression = `${a} + ${b}`;
+                    correctAnswer = a + b;
+                }
+            }
+            break;
+        case 2: // Subtraction (1-20)
+            {
+                const a = randomInt(10, 25);
                 const b = randomInt(1, 10);
+                expression = `${a} - ${b}`;
+                correctAnswer = a - b;
+            }
+            break;
+        case 3: // Addition (Double Digits 10-99)
+            {
+                const a = randomInt(15, 99);
+                const b = randomInt(10, 50);
                 expression = `${a} + ${b}`;
                 correctAnswer = a + b;
             }
             break;
-        case 2: // Subtraction (1-10)
+        case 4: // Subtraction (Double Digits 10-99)
             {
-                const a = randomInt(1, 10);
-                const b = randomInt(1, 10);
-                const big = Math.max(a, b);
-                const small = Math.min(a, b);
-                expression = `${big} - ${small}`;
-                correctAnswer = big - small;
+                const a = randomInt(30, 99);
+                const b = randomInt(10, Math.min(a - 1, 50));
+                expression = `${a} - ${b}`;
+                correctAnswer = a - b;
             }
             break;
-        case 3: // Addition (10-50)
+        case 5: // Multiplication (Tables 2-9)
             {
-                const a = randomInt(10, 50);
-                const b = randomInt(1, 50);
-                expression = `${a} + ${b}`;
-                correctAnswer = a + b;
-            }
-            break;
-        case 4: // Subtraction (10-50)
-            {
-                const a = randomInt(10, 50);
-                const b = randomInt(1, 40);
-                const big = Math.max(a, b);
-                const small = Math.min(a, b);
-                expression = `${big} - ${small}`;
-                correctAnswer = big - small;
-            }
-            break;
-        case 5: // Multiplication (Tables 1-5)
-            {
-                const a = randomInt(1, 5);
-                const b = randomInt(1, 10);
-                expression = `${a} × ${b}`;
-                correctAnswer = a * b;
-            }
-            break;
-        case 6: // Division (Simple integers)
-            {
-                const b = randomInt(2, 9); // divisor
-                const result = randomInt(1, 10); // quotient
-                const a = b * result; // dividend
-                expression = `${a} ÷ ${b}`;
-                correctAnswer = result;
-            }
-            break;
-        case 7: // Multiplication (Tables 6-12)
-            {
-                const a = randomInt(6, 12);
+                const a = randomInt(2, 9);
                 const b = randomInt(2, 10);
                 expression = `${a} × ${b}`;
                 correctAnswer = a * b;
             }
             break;
-        case 8: // Mixed Operations (Simple 3-term)
+        case 6: // Division (Larger integers)
             {
-                // e.g. 5 + 3 * 2. Keep it simple for mental math, maybe just 2 terms but larger range or mixed types
-                // Let's do (a + b) or (a - b) type things but maybe slightly larger or just random + / - / *
-                const op = Math.random() < 0.5 ? '+' : '-';
-                const a = randomInt(20, 100);
-                const b = randomInt(5, 20);
-                expression = `${a} ${op} ${b}`;
-                correctAnswer = op === '+' ? a + b : a - b;
+                const b = randomInt(3, 10); // divisor
+                const result = randomInt(4, 15); // quotient
+                const a = b * result; // dividend
+                expression = `${a} ÷ ${b}`;
+                correctAnswer = result;
             }
             break;
-        case 9: // Simple Algebra (x + a = b)
+        case 7: // Multiplication (Tables 7-15, Squares)
             {
-                // x + 5 = 12 -> x = 7
-                const x = randomInt(1, 12);
-                const add = randomInt(1, 20);
-                const sum = x + add;
-                expression = `x + ${add} = ${sum}`;
-                correctAnswer = x;
+                if (Math.random() < 0.3) {
+                    // Squares
+                    const a = randomInt(5, 12);
+                    expression = `${a}²`; // Display as square if renderer supports, or just a * a behavior
+                    expression = `${a} × ${a}`;
+                    correctAnswer = a * a;
+                } else {
+                    const a = randomInt(8, 15);
+                    const b = randomInt(3, 10);
+                    expression = `${a} × ${b}`;
+                    correctAnswer = a * b;
+                }
             }
             break;
-        case 10: // Pre-Algebra (Negative numbers/variables - e.g. 2x = 10 or 5 - x = 8)
+        case 8: // Mixed Operations (e.g. 5 * 3 + 2, 20 - 4 * 2)
             {
-                if (Math.random() < 0.5) {
-                    // 2x = 10
-                    const x = randomInt(2, 12);
-                    const coeff = randomInt(2, 9);
-                    const product = x * coeff;
-                    expression = `${coeff}x = ${product}`;
+                const mode = Math.random();
+                if (mode < 0.33) {
+                    // a * b + c
+                    const a = randomInt(2, 8);
+                    const b = randomInt(2, 8);
+                    const c = randomInt(1, 20);
+                    expression = `${a} × ${b} + ${c}`;
+                    correctAnswer = a * b + c;
+                } else if (mode < 0.66) {
+                    // a * b - c
+                    const a = randomInt(3, 9);
+                    const b = randomInt(2, 9);
+                    const c = randomInt(1, (a * b) - 1);
+                    expression = `${a} × ${b} - ${c}`;
+                    correctAnswer = a * b - c;
+                } else {
+                    // a + b * c
+                    const a = randomInt(5, 20);
+                    const b = randomInt(2, 6);
+                    const c = randomInt(2, 6);
+                    expression = `${a} + ${b} × ${c}`;
+                    correctAnswer = a + b * c;
+                }
+            }
+            break;
+        case 9: // Algebra (x + a = b, ax = b)
+            {
+                const mode = Math.random();
+                if (mode < 0.5) {
+                    // ax + b = c -> x = ?
+                    // 2x + 5 = 15 -> 2x = 10 -> x = 5
+                    const x = randomInt(2, 10);
+                    const a = randomInt(2, 5);
+                    const b = randomInt(1, 20);
+                    const c = (a * x) + b;
+                    expression = `${a}x + ${b} = ${c}`;
                     correctAnswer = x;
                 } else {
-                    // Negative result: 5 - 10 = ?
-                    const a = randomInt(5, 10);
-                    const b = randomInt(11, 20);
+                    // x - a = b
+                    const x = randomInt(10, 50);
+                    const a = randomInt(5, 20);
+                    const b = x - a;
+                    expression = `x - ${a} = ${b}`;
+                    correctAnswer = x;
+                }
+            }
+            break;
+        case 10: // Pre-Algebra / Harder
+            {
+                const mode = Math.random();
+                if (mode < 0.33) {
+                    // Inequalities: 2x < 10 (Solve for limit? Or just evaluate? Hard for single number answer)
+                    // Let's stick to equations but harder.
+                    // 3x - 5 = x + 7
+                    // 2x = 12 -> x = 6
+                    const x = randomInt(3, 12);
+                    // Let's do: ax - b = c
+                    const a = randomInt(3, 9);
+                    const b = randomInt(1, 20);
+                    const result = (a * x) - b;
+                    expression = `${a}x - ${b} = ${result}`;
+                    correctAnswer = x;
+                } else if (mode < 0.66) {
+                    // Negative Arithmetic
+                    const a = randomInt(5, 20);
+                    const b = randomInt(25, 50);
                     expression = `${a} - ${b}`;
                     correctAnswer = a - b;
+                } else {
+                    // Variable Squares: x^2 = 49
+                    const x = randomInt(3, 12);
+                    expression = `x² = ${x * x}`;
+                    correctAnswer = x;
                 }
             }
             break;
