@@ -4,7 +4,7 @@ export interface Question {
     id: string;
     expression: string; // e.g., "5 + x = 10" or "5 + 5"
     correctAnswer: number;
-    distractor: number;
+    answers: number[]; // Shuffled array of 4 options
     complexityLevel: number;
 }
 

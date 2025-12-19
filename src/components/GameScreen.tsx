@@ -87,7 +87,6 @@ export const GameScreen = () => {
     };
 
     const handleAnswer = (val: number) => {
-        // Determine correctness strictly for eager feedback if needed, but relied on effect
         const isCorrect = state.currentQuestion?.correctAnswer === val;
         if (!isCorrect) {
             if (navigator.vibrate) navigator.vibrate(200);
@@ -110,10 +109,6 @@ export const GameScreen = () => {
     const isDarkTheme = ['night', 'space', 'tornado', 'storm', 'rain', 'forest', 'volcano'].includes(progress.settings.selectedTheme);
 
     const question = state.currentQuestion;
-    // Deterministic shuffle
-    const isLeftCorrect = question ? question.id.charCodeAt(0) % 2 === 0 : true;
-    const leftAnswer = isLeftCorrect ? question?.correctAnswer : question?.distractor;
-    const rightAnswer = !isLeftCorrect ? question?.correctAnswer : question?.distractor;
 
     return (
         <div className={clsx(
@@ -223,24 +218,17 @@ export const GameScreen = () => {
                             </AnimatePresence>
                         </div>
 
-                        {/* Input Zone */}
-                        <div className="h-[30%] w-full grid grid-cols-2 gap-4 px-6 pb-8 z-30">
-                            {question && (
-                                <>
-                                    <button
-                                        onClick={() => handleAnswer(leftAnswer!)}
-                                        className="bg-white/10 backdrop-blur-md hover:bg-white/20 active:scale-95 transition-all rounded-3xl border-2 border-white/30 flex items-center justify-center"
-                                    >
-                                        <span className="text-4xl font-bold text-white shadow-black/10 drop-shadow-md">{leftAnswer}</span>
-                                    </button>
-                                    <button
-                                        onClick={() => handleAnswer(rightAnswer!)}
-                                        className="bg-white/10 backdrop-blur-md hover:bg-white/20 active:scale-95 transition-all rounded-3xl border-2 border-white/30 flex items-center justify-center"
-                                    >
-                                        <span className="text-4xl font-bold text-white shadow-black/10 drop-shadow-md">{rightAnswer}</span>
-                                    </button>
-                                </>
-                            )}
+                        {/* Input Zone - 2x2 Grid */}
+                        <div className="h-[35%] w-full grid grid-cols-2 gap-3 px-4 pb-6 z-30">
+                            {question && question.answers.map((ans, idx) => (
+                                <button
+                                    key={`${question.id}-${idx}`}
+                                    onClick={() => handleAnswer(ans)}
+                                    className="bg-white/10 backdrop-blur-md hover:bg-white/20 active:scale-95 transition-all rounded-2xl border-2 border-white/20 flex items-center justify-center shadow-lg"
+                                >
+                                    <span className="text-3xl font-bold text-white shadow-black/10 drop-shadow-md">{ans}</span>
+                                </button>
+                            ))}
                         </div>
 
                         {/* Results Modal */}

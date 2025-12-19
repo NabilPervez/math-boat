@@ -217,13 +217,37 @@ export const generateQuestion = (complexity: number): Question => {
             }
     }
 
-    const distractor = createDistractor(correctAnswer);
+    // Generate 3 unique distractors
+    const distractors = new Set<number>();
+
+    // Safety break
+    let loops = 0;
+    while (distractors.size < 3 && loops < 50) {
+        const d = createDistractor(correctAnswer);
+        if (d !== correctAnswer && !distractors.has(d)) {
+            distractors.add(d);
+        }
+        loops++;
+    }
+
+    // Fill if we failed to find enough distinct ones (rare edge case with small numbers)
+    while (distractors.size < 3) {
+        distractors.add(correctAnswer + distractors.size + 1);
+    }
+
+    // Combine and shuffle
+    const answers = [correctAnswer, ...Array.from(distractors)];
+    // Fisher-Yates shuffle
+    for (let i = answers.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [answers[i], answers[j]] = [answers[j], answers[i]];
+    }
 
     return {
         id: crypto.randomUUID(),
         expression,
         correctAnswer,
-        distractor,
+        answers,
         complexityLevel: level,
     };
 };
