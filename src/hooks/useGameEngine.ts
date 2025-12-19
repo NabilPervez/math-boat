@@ -17,12 +17,13 @@ export const useGameEngine = () => {
     const [state, setState] = useState<GameState>(INITIAL_STATE);
     const timerRef = useRef<number | null>(null);
 
-    const startGame = useCallback(() => {
+    const startGame = useCallback((startingDifficulty: number = 1) => {
         // Generate first question
-        const firstQuestion = generateQuestion(1);
+        const firstQuestion = generateQuestion(startingDifficulty);
 
         setState({
             ...INITIAL_STATE,
+            currentComplexity: startingDifficulty,
             status: 'PLAYING',
             currentQuestion: firstQuestion,
         });

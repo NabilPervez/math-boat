@@ -25,6 +25,21 @@ const createDistractor = (correct: number): number => {
     return distractor;
 };
 
+export const COMPEXITY_NAMES: Record<number, string> = {
+    1: "Basic Addition",
+    2: "Basic Subtraction",
+    3: "Intermediate Addition",
+    4: "Intermediate Subtraction",
+    5: "Multiplication (1-5)",
+    6: "Division",
+    7: "Multiplication (6-12)",
+    8: "Mixed Operations",
+    9: "Simple Algebra",
+    10: "Pre-Algebra"
+};
+
+export const getLevelName = (level: number) => COMPEXITY_NAMES[level] || "Unknown";
+
 export const generateQuestion = (complexity: number): Question => {
     let expression = '';
     let correctAnswer = 0;
