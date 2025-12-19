@@ -155,14 +155,26 @@ export const GameScreen = () => {
 
                         {/* HUD */}
                         <div className="absolute top-4 left-0 w-full px-6 flex justify-between items-start z-30 text-white/90 font-medium">
-                            <div className="flex flex-col items-start">
+                            <div className="flex flex-col items-start min-w-[100px]">
                                 <span className="text-3xl font-display font-bold">{state.questionsAnsweredCorrectly}/10</span>
-                                <div className="flex items-center gap-1 opacity-80">
-                                    <span className="text-xs uppercase tracking-widest">Lvl {state.currentComplexity}</span>
+                                <div className="flex items-center gap-1 opacity-80 mt-1">
+                                    <span className="text-sm font-bold uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded">Lvl {state.currentComplexity}</span>
                                 </div>
                             </div>
 
-                            <div className="flex flex-col items-end">
+                            {/* Streak Flame UI */}
+                            {state.questionsAnsweredCorrectly > 1 && (
+                                <motion.div
+                                    initial={{ scale: 0, y: -20 }}
+                                    animate={{ scale: 1, y: 0 }}
+                                    className="absolute left-1/2 -translate-x-1/2 top-2 flex flex-col items-center"
+                                >
+                                    <span className="text-4xl filter drop-shadow-[0_0_10px_rgba(255,165,0,0.8)]">🔥</span>
+                                    <span className="text-lg font-black text-yellow-300 drop-shadow-md">{state.questionsAnsweredCorrectly}</span>
+                                </motion.div>
+                            )}
+
+                            <div className="flex flex-col items-end min-w-[60px]">
                                 <div className="relative">
                                     <svg width="40" height="40" viewBox="0 0 36 36" className="transform -rotate-90">
                                         <path className="text-white/20" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" />
