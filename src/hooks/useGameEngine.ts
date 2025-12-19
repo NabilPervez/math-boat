@@ -143,10 +143,10 @@ export const useGameEngine = () => {
         });
     }, []);
 
-    const resetGame = useCallback(() => {
+    const resetGame = useCallback((difficulty?: number) => {
         // Clear interval just in case
         if (timerRef.current) clearInterval(timerRef.current);
-        startGame();
+        startGame(difficulty); // Will default to 1 if undefined, need to handle "current" outside or pass it
     }, [startGame]);
 
     return { state, startGame, submitAnswer, resetGame, stopGame };

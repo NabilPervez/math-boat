@@ -251,8 +251,8 @@ export const GameScreen = () => {
                                 timeTaken={(30 - state.timer).toFixed(1)}
                                 maxLevel={getMaxLevel()}
                                 mostCommonError={getWeakestArea()}
-                                onRestart={() => { playClick(); resetGame(); }}
-                                onMainMenu={() => { playClick(); setScreen('MENU'); resetGame(); }}
+                                onRestart={() => { playClick(); resetGame(state.currentComplexity); }} // Restart at current/max level
+                                onMainMenu={() => { playClick(); setScreen('MENU'); resetGame(1); }} // Reset to 1 for menu safety (or keep?) Default to 1 is fine for menu
                             />
                         )}
                     </motion.div>
