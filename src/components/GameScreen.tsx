@@ -10,7 +10,23 @@ import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getLevelName } from '../utils/mathGenerator';
 
+import { WeatherEffects } from './WeatherEffects';
+
 type ScreenState = 'MENU' | 'GAME' | 'STORE';
+
+const THEME_GRADIENTS: Record<string, string> = {
+    sunset: 'bg-gradient-to-b from-[#F4AC86] to-[#C85646]',
+    rain: 'bg-gradient-to-b from-[#5c6e7a] to-[#2c3e50]',
+    forest: 'bg-gradient-to-b from-[#2d4d23] to-[#1a2e15]',
+    snow: 'bg-gradient-to-b from-[#e6e9f0] to-[#b0b8c5]',
+    night: 'bg-gradient-to-b from-[#0f2027] to-[#203a43]',
+    desert: 'bg-gradient-to-b from-[#fce38a] to-[#f38181]',
+    candy: 'bg-gradient-to-b from-[#ff9a9e] to-[#fecfef]',
+    storm: 'bg-gradient-to-b from-[#373B44] to-[#4286f4]',
+    volcano: 'bg-gradient-to-b from-[#430b0b] to-[#791515]',
+    tornado: 'bg-gradient-to-b from-[#414345] to-[#232526]',
+    space: 'bg-gradient-to-b from-[#000000] to-[#0f0c29]'
+};
 
 export const GameScreen = () => {
     const [screen, setScreen] = useState<ScreenState>('MENU');
@@ -18,9 +34,13 @@ export const GameScreen = () => {
     // Hooks
     const { state, startGame, submitAnswer, resetGame } = useGameEngine();
     const { progress, updateStreak, addPoints, runTransaction, updateSettings } = usePersistence();
-    const { playClick, playCorrect, playWrong, playWin } = useSoundSystem(progress.settings.volume);
+    const { playClick, playCorrect, playWrong, playWin, playAmbient, stopAmbient, playThunder } = useSoundSystem(progress.settings.volume);
 
-    // Sync volume context or other global effects if needed
+    // Ambient Sound Effect
+    useEffect(() => {
+        playAmbient(progress.settings.selectedTheme);
+        return () => stopAmbient();
+    }, [progress.settings.selectedTheme, playAmbient, stopAmbient]);
 
     // Game Logic Effect: Check Win/Loss, Sound, Persistence
     const lastStatus = useRef(state.status);
@@ -36,10 +56,6 @@ export const GameScreen = () => {
         // Wrong Answer Sound Logic
         if (state.consecutiveWrong > lastWrongCount.current) {
             playWrong(); // Wrong Answer
-        } else if (state.consecutiveWrong === 0 && lastWrongCount.current > 0) {
-            // Reset happened (handled by correct, but if we drop level we need to play wrong?)
-            // If we drop level due to double wrong, consecutive wrong resets. 
-            // We can detect level drop if we tracked it, but let's stick to simple "streak broke" logic or rely on click handler for immediate feedback.
         }
 
         // Game Over / Win Logic
@@ -71,13 +87,9 @@ export const GameScreen = () => {
     };
 
     const handleAnswer = (val: number) => {
-        // Determine correctness before submitting for sound (or assume engine handles state fast enough)
+        // Determine correctness strictly for eager feedback if needed, but relied on effect
         const isCorrect = state.currentQuestion?.correctAnswer === val;
-        if (isCorrect) {
-            // Play correct handled by effect or here for zero latency?
-            // Effect is safer for pitch logic but latency might be 1 frame.
-        } else {
-            playWrong();
+        if (!isCorrect) {
             if (navigator.vibrate) navigator.vibrate(200);
         }
         playClick(); // General interaction
@@ -86,22 +98,16 @@ export const GameScreen = () => {
     };
 
     // Stats Calculation for Result Modal
-    const getMaxLevel = () => {
-        // Iterate history? Or just use current complexity? 
-        // Max reached is likely the current complexity if won, or high mark.
-        // Let's just blindly use state.currentComplexity for MVP.
-        return getLevelName(state.currentComplexity);
-    };
+    const getMaxLevel = () => getLevelName(state.currentComplexity);
 
     const getWeakestArea = () => {
-        // Analyze history
-        // We need to know the question type for each history entry. 
-        // Current history only has ID. Ideally we'd map back or store type in history.
-        // For MVP, we can't easily do "Mixed Operations" vs "Algebra" differentiation if not stored.
-        // We will skip strict type analysis and just say "Level X"
         if (state.consecutiveWrong > 0) return getLevelName(state.currentComplexity);
         return null;
     };
+
+    // Helper to safely get gradient or default
+    const themeGradient = THEME_GRADIENTS[progress.settings.selectedTheme] || THEME_GRADIENTS['sunset'];
+    const isDarkTheme = ['night', 'space', 'tornado', 'storm', 'rain', 'forest', 'volcano'].includes(progress.settings.selectedTheme);
 
     const question = state.currentQuestion;
     // Deterministic shuffle
@@ -111,26 +117,12 @@ export const GameScreen = () => {
 
     return (
         <div className={clsx(
-            "relative w-full h-full max-w-md mx-auto flex flex-col overflow-hidden transition-colors duration-1000",
-            // Theme Backgrounds
-            progress.settings.selectedTheme === 'night' && "bg-[#0f2027]",
-            progress.settings.selectedTheme === 'storm' && "bg-[#373B44]",
-            // Default handled by CSS (sunset)
+            "relative w-full h-full max-w-md mx-auto flex flex-col overflow-hidden transition-all duration-1000",
+            themeGradient
         )}>
 
-            {/* Background Overlays for Themes */}
-            {progress.settings.selectedTheme === 'night' && (
-                <div className="absolute inset-0 bg-gradient-to-b from-[#0f2027] to-[#203a43] -z-10" />
-            )}
-            {progress.settings.selectedTheme === 'storm' && (
-                <div className="absolute inset-0 bg-gradient-to-b from-[#373B44] to-[#4286f4] -z-10" />
-            )}
-
-            {/* Stars for Night Mode */}
-            {progress.settings.selectedTheme === 'night' && (
-                <div className="absolute inset-0 opacity-50 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] -z-5" />
-            )}
-
+            {/* Weather Effects Layer */}
+            <WeatherEffects type={progress.settings.selectedTheme} onFlash={playThunder} />
 
             <AnimatePresence mode="wait">
 
@@ -145,7 +137,7 @@ export const GameScreen = () => {
                         />
                         {/* Decorative Boat in BG */}
                         <div className="absolute bottom-20 left-0 w-full opacity-50 pointer-events-none">
-                            <Boat position={50} />
+                            <Boat position={50} type={progress.settings.selectedBoat} />
                         </div>
                     </motion.div>
                 )}
@@ -197,13 +189,15 @@ export const GameScreen = () => {
 
                         {/* Visual Zone */}
                         <div className="relative h-[40%] w-full flex items-center justify-center">
-                            {/* Dynamic Sun/Moon based on Theme */}
-                            <div className={clsx(
-                                "absolute top-10 w-48 h-48 rounded-full blur-2xl opacity-60 transition-colors duration-1000",
-                                progress.settings.selectedTheme === 'night' ? "bg-blue-300" : "bg-gradient-to-b from-[#FFF0D4] to-transparent"
-                            )} />
+                            {/* Sun/Moon Area - Only show if simple theme */}
+                            {(progress.settings.selectedTheme === 'sunset' || progress.settings.selectedTheme === 'desert') && (
+                                <div className="absolute top-10 w-48 h-48 bg-gradient-to-b from-[#FFF0D4] to-transparent rounded-full blur-2xl opacity-60" />
+                            )}
+                            {(progress.settings.selectedTheme === 'night' || progress.settings.selectedTheme === 'space') && (
+                                <div className="absolute top-10 w-32 h-32 bg-blue-100 rounded-full blur-xl opacity-20 shadow-[0_0_50px_rgba(255,255,255,0.4)]" />
+                            )}
 
-                            <Boat position={state.boatPosition} />
+                            <Boat position={state.boatPosition} type={progress.settings.selectedBoat} />
                         </div>
 
                         {/* Question Zone */}
@@ -218,7 +212,10 @@ export const GameScreen = () => {
                                         transition={{ duration: 0.2 }}
                                         className="text-center"
                                     >
-                                        <h2 className="text-6xl font-display font-bold text-white drop-shadow-sm">
+                                        <h2 className={clsx(
+                                            "text-6xl font-display font-bold drop-shadow-sm transition-colors",
+                                            (isDarkTheme || progress.settings.selectedTheme === 'snow') ? "text-white" : "text-white" // Always white for better contrast usually
+                                        )}>
                                             {question.expression.replace('*', '×').replace('/', '÷')}
                                         </h2>
                                     </motion.div>
