@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import type { UserProgress } from '../hooks/usePersistence';
+import { COMPEXITY_NAMES } from '../utils/mathGenerator';
 
 interface MainMenuProps {
     onStart: (difficulty: number) => void;
@@ -9,6 +11,8 @@ interface MainMenuProps {
 }
 
 export const MainMenu = ({ onStart, onStore, progress, onUpdateSettings }: MainMenuProps) => {
+    const [difficulty, setDifficulty] = useState<number>(1);
+
     return (
         <div className="flex flex-col items-center justify-center w-full h-full p-6 space-y-8 relative z-50">
 
@@ -41,14 +45,31 @@ export const MainMenu = ({ onStart, onStore, progress, onUpdateSettings }: MainM
             </motion.div>
 
             {/* Difficulty Selector */}
-            <div className="w-full space-y-3">
-                <p className="text-white/70 text-sm font-bold uppercase tracking-wider text-center">Select Difficulty</p>
-                <div className="grid grid-cols-1 gap-3">
-                    <button onClick={() => onStart(1)} className="bg-white text-[#C85646] font-bold py-4 rounded-xl shadow-lg hover:scale-[1.02] transition-transform active:scale-95">
-                        Start Game
-                    </button>
-                    {/* Could expand to allow specific level selection if unlocked logic permitted, keeping simple for now */}
+            <div className="w-full space-y-4 bg-black/20 p-4 rounded-2xl backdrop-blur-sm border border-white/10">
+                <div className="flex justify-between items-center">
+                    <p className="text-white/70 text-sm font-bold uppercase tracking-wider">Start Difficulty</p>
+                    <span className="bg-white/20 px-2 py-1 rounded text-xs font-bold text-white">{difficulty}</span>
                 </div>
+
+                <div className="text-center">
+                    <p className="text-xl font-bold text-white mb-2 font-display">{COMPEXITY_NAMES[difficulty]}</p>
+                    <input
+                        type="range"
+                        min="1"
+                        max="10"
+                        step="1"
+                        value={difficulty}
+                        onChange={(e) => setDifficulty(parseInt(e.target.value))}
+                        className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer accent-[#2a9d8f]"
+                    />
+                </div>
+
+                <button
+                    onClick={() => onStart(difficulty)}
+                    className="w-full bg-white text-[#C85646] font-bold py-4 rounded-xl shadow-lg hover:scale-[1.02] transition-transform active:scale-95"
+                >
+                    Start Game
+                </button>
             </div>
 
             {/* Bottom Actions */}
